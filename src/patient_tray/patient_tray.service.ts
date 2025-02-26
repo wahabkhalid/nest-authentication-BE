@@ -16,6 +16,7 @@ import { Patient } from 'src/patient/entities/patient.entity';
 import { UsersService } from 'src/users/users.service';
 import { userRoleEnums } from 'src/constants/enums';
 import { TrayViewHistory } from './entities/tray-view-history.entity';
+import { UpdatePatientTrayDto } from './dto/update-tray.dto';
 
 @Injectable()
 export class PatientTrayService {
@@ -130,5 +131,53 @@ export class PatientTrayService {
     }
 
     return result;
+  }
+
+  async updatePatientTray(
+    sessionId: string,
+    updatePatientTrayDto: UpdatePatientTrayDto,
+    authUser: AuthenticatedUserType,
+  ) {
+    const { miniatureIds } = updatePatientTrayDto;
+    const sessionExists = await this.sessionService.getSessionByPatientId(
+      sessionId,
+      authUser,
+    );
+
+    if (!sessionExists) {
+      throw new NotFoundException('Session not found');
+    }
+
+    const patientTrayExists = await this.patientTrayRepository.findOne({
+      where: {
+        session: { id: sessionId },
+        patient: { id: sessionExists?.patientUser?.patient?.id },
+      },
+    });
+    if (!patientTrayExists) {
+      throw new NotFoundException('Tray not found for this session');
+    }
+
+    if (!miniatureIds || miniatureIds.length === 0) {
+      throw new NotFoundException('miniatureIds is required');
+    }
+
+    const miniatureExists = await this.miniatureRepository.find({
+      where: { id: In(miniatureIds) },
+    });
+    if (!miniatureExists || miniatureExists.length !== miniatureIds.length) {
+      throw new NotFoundException('one or more miniatures not valid');
+    }
+
+    await this.trayMiniaturesRepository.delete({
+      patientTray: { id: patientTrayExists.id },
+    });
+    const trayTosave = miniatureIds.map((miniature) => {
+      return this.trayMiniaturesRepository.create({
+        patientTray: { id: patientTrayExists.id },
+        miniature: { id: miniature },
+      });
+    });
+    return this.trayMiniaturesRepository.save(trayTosave);
   }
 }

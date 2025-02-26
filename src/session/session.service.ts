@@ -90,6 +90,17 @@ export class SessionService {
     return session;
   }
 
+  async getSessionByPatientId(
+    id: string,
+    authUser: AuthenticatedUserType,
+  ): Promise<Session> {
+    const session = await this.sessionRepository.findOne({
+      where: { id, patientUser: { id: authUser.id } },
+      relations: ['clinicianUser'],
+    });
+    return session;
+  }
+
   async getSessionsByPatientId(
     authUser: AuthenticatedUserType,
   ): Promise<Session[]> {

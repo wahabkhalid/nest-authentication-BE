@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import {
   AuthenticatedUserType,
 } from 'src/auth/decorator/authenticated-user';
 import { PatientGuard } from 'src/auth/guard/patient-guard';
+import { UpdatePatientTrayDto } from './dto/update-tray.dto';
 
 @ApiTags('patient-tray')
 @ApiBearerAuth()
@@ -87,6 +89,37 @@ export class PatientTrayController {
     return {
       data,
       message: 'Patient Tray fetched successfully.',
+    };
+  }
+  @ApiOperation({
+    summary: 'update patient tray',
+    description: 'update patient tray',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'patient tray updated successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'tray not found',
+  })
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  async updatePatientTray(
+    @Param('id') id: string,
+    @Body()
+    @Body()
+    updatePatientTrayDto: UpdatePatientTrayDto,
+    @AuthenticatedUser() authUser: AuthenticatedUserType,
+  ): Promise<object> {
+    const data = await this.patientTrayService.updatePatientTray(
+      id,
+      updatePatientTrayDto,
+      authUser,
+    );
+    return {
+      message: 'patient tray updated successfully',
+      data,
     };
   }
 }
